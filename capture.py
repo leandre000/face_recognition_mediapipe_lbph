@@ -2,18 +2,20 @@ import cv2
 import mediapipe as mp
 import os
 
-def capture_person(person_name):
-    """Capture face images for a single person."""
+def capture_person(person_name, target_images=30):
+    """Auto-capture face images for a single person."""
     save_dir = f"dataset/{person_name}"
     os.makedirs(save_dir, exist_ok=True)
     
     mp_face = mp.solutions.face_mesh
     cap = cv2.VideoCapture(0)
     count = 0
+    frame_skip = 0  # Capture every Nth frame to avoid duplicates
     
-    print(f"\n--- Capturing faces for: {person_name} ---")
-    print("Face yourself toward the camera.")
-    print("Press SPACE to capture frames, Q to finish.")
+    print(f"\n--- Auto-capturing faces for: {person_name} ---")
+    print(f"Target: {target_images} images")
+    print("Face the camera. Images will be captured automatically.")
+    print("Press Q to finish early, or wait until target is reached.")
     
     with mp_face.FaceMesh(
             max_num_faces=1,
@@ -22,7 +24,7 @@ def capture_person(person_name):
             min_tracking_confidence=0.5
     ) as fm:
         
-        while True:
+        while count < target_images:
             ret, frame = cap.read()
             if not ret:
                 break
@@ -36,12 +38,14 @@ def capture_person(person_name):
             # Display instruction text
             cv2.putText(frame, f"Capturing: {person_name}", (10, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-            cv2.putText(frame, f"Images saved: {count}", (10, 70),
+            cv2.putText(frame, f"Progress: {count}/{target_images}", (10, 70),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-            cv2.putText(frame, "SPACE=capture  Q=done", (10, 110),
+            cv2.putText(frame, "Q=skip to next", (10, 110),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 1)
             
+            face_detected = False
             if results.multi_face_landmarks:
+                face_detected = True
                 for face_landmarks in results.multi_face_landmarks:
                     xs = [int(lm.x * w) for lm in face_landmarks.landmark]
                     ys = [int(lm.y * h) for lm in face_landmarks.landmark]
@@ -51,28 +55,27 @@ def capture_person(person_name):
                     # Draw green rectangle
                     cv2.rectangle(frame, (x_min, y_min), (x_max, y_max),
                                   (0, 255, 0), 2)
+                    
+                    # Auto-capture every 3rd frame to avoid similar duplicates
+                    frame_skip += 1
+                    if frame_skip >= 3 and count < target_images:
+                        face_crop = frame[y_min:y_max, x_min:x_max]
+                        if face_crop.size > 0 and face_crop.shape[0] >= 20 and face_crop.shape[1] >= 20:
+                            cv2.imwrite(f"{save_dir}/{count}.jpg", face_crop)
+                            count += 1
+                            frame_skip = 0
+                            print(f"  Captured image {count}/{target_images}")
+            
+            if not face_detected:
+                cv2.putText(frame, "No face detected", (10, 150),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
             
             cv2.imshow("Face Capture", frame)
             
             key = cv2.waitKey(1) & 0xFF
             
-            # SPACE to capture
-            if key == ord(' '):
-                if results.multi_face_landmarks:
-                    for face_landmarks in results.multi_face_landmarks:
-                        xs = [int(lm.x * w) for lm in face_landmarks.landmark]
-                        ys = [int(lm.y * h) for lm in face_landmarks.landmark]
-                        x_min, x_max = max(min(xs), 0), min(max(xs), w - 1)
-                        y_min, y_max = max(min(ys), 0), min(max(ys), h - 1)
-                        
-                        face_crop = frame[y_min:y_max, x_min:x_max]
-                        if face_crop.size > 0:
-                            cv2.imwrite(f"{save_dir}/{count}.jpg", face_crop)
-                            count += 1
-                            print(f"  Saved image {count}")
-            
-            # Q to quit
-            elif key == ord('q'):
+            # Q to skip to next person
+            if key == ord('q'):
                 break
     
     cap.release()

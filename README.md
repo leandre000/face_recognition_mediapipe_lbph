@@ -41,8 +41,9 @@ The script will ask for **Person 1's name**, then **Person 2's name**.
 
 For each person:
 - Face yourself toward the camera
-- Press **SPACE** to capture frames (capture 20–30 images per person)
-- Press **Q** to finish and move to the next person
+- **Images are captured automatically** (target: 30 images per person)
+- Vary your angles and distance slightly for better recognition
+- Press **Q** to skip and move to the next person
 
 Images are saved to:
 - `dataset/<person1_name>/`
