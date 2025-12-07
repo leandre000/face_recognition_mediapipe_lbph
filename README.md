@@ -31,16 +31,22 @@ pip install opencv-python mediapipe opencv-contrib-python numpy<2
 
 ## 🚀 Quick Start
 
-### Step 1: Capture Face Images
+### Step 1: Capture Face Images (2 People)
 
 ```bash
 python capture.py
 ```
 
-- Enter your name when prompted
+The script will ask for **Person 1's name**, then **Person 2's name**.
+
+For each person:
 - Face yourself toward the camera
-- Press **Q** to stop capturing
-- Images are saved to `dataset/<your_name>/`
+- Press **SPACE** to capture frames (capture 20–30 images per person)
+- Press **Q** to finish and move to the next person
+
+Images are saved to:
+- `dataset/<person1_name>/`
+- `dataset/<person2_name>/`
 
 ### Step 2: Train the Model
 
@@ -81,7 +87,8 @@ Press **Q** to exit.
 
 ## 💡 Tips
 
-- Capture 20-30 images per person for best results
+- Capture 20–30 images **per person** for best results
 - Ensure good lighting when capturing faces
-- Retrain the model after adding new people
-- Press **Q** to quit any running script
+- Vary face angles and distances slightly
+- After adding new people, retrain the model with `python train.py`
+- Press **Q** to quit the recognition script
